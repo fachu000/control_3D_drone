@@ -119,8 +119,16 @@ V3F QuadControl::BodyRateControl(V3F pqrCmd, V3F pqr)
   V3F momentCmd;
 
   ////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
-
-  
+    ParamsHandle config = SimpleConfig::GetInstance();
+    Ixx = config->Get(_config + ".Ixx", 0);
+    Iyy = config->Get(_config + ".Iyy", 0);
+    Izz = config->Get(_config + ".Izz", 0);
+    
+    V3F omega_dot = kpPQR*( pqrCmd - pqr );
+    
+    V3F I(Ixx,Iyy,Izz);
+    momentCmd = I*omega_dot;
+   // printf("%.3f\n",momentCmd[1]);
 
   /////////////////////////////// END STUDENT CODE ////////////////////////////
 
