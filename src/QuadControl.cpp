@@ -69,11 +69,33 @@ VehicleCommand QuadControl::GenerateMotorCommands(float collThrustCmd, V3F momen
   // You'll need the arm length parameter L, and the drag/thrust ratio kappa
 
   ////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
+    ParamsHandle config = SimpleConfig::GetInstance();
+    L = config->Get(_config + ".L", 0);
+    kappa = config->Get(_config + ".kappa", 0);
+    
+    //float v[9] = {1.,2.,3.,4.,5.,6.,7.,8.,9.};
+    //float v[9] = {-1,-1,0,0,-1,-1,-1,0,-1};
+    //Mat3x3F a = Mat3x3F(v);
+    //Mat3x3F M = Mat3x3F(v);
+    
+    float c = collThrustCmd;
+    float b1 = momentCmd.x/L;
+    float b2 = momentCmd.y/L;
+    float b3 = momentCmd.z/kappa;
+    
+    float F4 = -1/4.*(b3-b1+b2-c);
+    float F3 = -1/2.*(2*F4+b2-c);
+    float F2 = -1/2.*(2*F3 + b1 -c);
+    float F1 = c - F2 - F3 - F4;
 
-  cmd.desiredThrustsN[0] = mass * 9.81f / 4.f; // front left
-  cmd.desiredThrustsN[1] = mass * 9.81f / 4.f; // front right
-  cmd.desiredThrustsN[2] = mass * 9.81f / 4.f; // rear left
-  cmd.desiredThrustsN[3] = mass * 9.81f / 4.f; // rear right
+    
+    //////// THE FOLLOWING ORDERING CRITERIA DIFFERS FROM THE EXERCISE - DEBUG FOLLOWING
+    
+    //printf("F = %.3f %.3f %.3f %.3f\n",F1,F2,F3,F4);
+    cmd.desiredThrustsN[0] = F1; //mass * 9.81f / 4.f; // front left
+    cmd.desiredThrustsN[1] = F2; //mass * 9.81f / 4.f; // front right
+    cmd.desiredThrustsN[2] = F3; //mass * 9.81f / 4.f; // rear left
+    cmd.desiredThrustsN[3] = F4; //mass * 9.81f / 4.f; // rear right
 
   /////////////////////////////// END STUDENT CODE ////////////////////////////
 
