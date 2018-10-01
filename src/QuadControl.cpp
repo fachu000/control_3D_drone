@@ -94,8 +94,8 @@ VehicleCommand QuadControl::GenerateMotorCommands(float collThrustCmd, V3F momen
     //printf("F = %.3f %.3f %.3f %.3f\n",F1,F2,F3,F4);
     cmd.desiredThrustsN[0] = F1; //mass * 9.81f / 4.f; // front left
     cmd.desiredThrustsN[1] = F2; //mass * 9.81f / 4.f; // front right
-    cmd.desiredThrustsN[2] = F3; //mass * 9.81f / 4.f; // rear left
-    cmd.desiredThrustsN[3] = F4; //mass * 9.81f / 4.f; // rear right
+    cmd.desiredThrustsN[2] = F4; //mass * 9.81f / 4.f; // rear left
+    cmd.desiredThrustsN[3] = F3; //mass * 9.81f / 4.f; // rear right
 
   /////////////////////////////// END STUDENT CODE ////////////////////////////
 
@@ -158,9 +158,18 @@ V3F QuadControl::RollPitchControl(V3F accelCmd, Quaternion<float> attitude, floa
   Mat3x3F R = attitude.RotationMatrix_IwrtB();
 
   ////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
+    ParamsHandle config = SimpleConfig::GetInstance();
+    float Mass = config->Get(_config + ".Mass", 0);
+    float c_thrust = collThrustCmd/Mass;
 
-
-
+    float b_x_c = accelCmd[0]/c_thrust;
+    float b_y_c = accelCmd[1]/c_thrust;
+    float b_x_dot_c = kpBank * (b_x_c - R(0,2));
+    float b_y_dot_c = kpBank * (b_y_c - R(1,2));
+    
+    pqrCmd[0] = 1/R(2,2)*(R(1,0)*b_x_dot_c - R(0,0)*b_y_dot_c);
+    pqrCmd[1] = 1/R(2,2)*(R(1,1)*b_x_dot_c - R(0,1)*b_y_dot_c);
+    pqrCmd[2] = 0;
   /////////////////////////////// END STUDENT CODE ////////////////////////////
 
   return pqrCmd;
