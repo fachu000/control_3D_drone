@@ -13,7 +13,14 @@ Quad.ControlType = QuadControl
 Quad.ControlConfig = QuadControlParams
 
 # reference trajectory (just the starting position)
-QuadControlParams.Trajectory=0,0,-1
+#QuadControlParams.Trajectory=0,0,-1
+QuadControlParams.Trajectory=traj/FigureEight.txt
+Commands.1=AddGraph1.Quad1.PosFollowErr
+Commands.2=AddGraph1.Quad2.PosFollowErr
+Commands.3=Toggle.RefTrajectory
+Commands.4=Toggle.ActualTrajectory
+Commands.5=AddGraph1.WindowThreshold(Quad2.PosFollowErr,.25,3)
+
 
 # initial conditions
 Quad.InitialPos=5,0,-1
@@ -21,7 +28,8 @@ Quad.InitialVel=0,0,0
 Quad.InitialYPR=0,0,0
 Quad.InitialOmega=0,0,0
 
-Quad.cy=-.05
+#Quad.cy=-.05
+
 
 # graphing commands
 Commands.1=AddGraph1.Quad.Pos.Z
