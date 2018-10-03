@@ -8,9 +8,9 @@ The functions `GenerateMotorCommands()`, and `BodyRateControl()` were
 implemented successfully. 
 
 The major difficulty stemmed from the fact that the project or code
-does not apparently describe what are the rotation direction of each
+does not apparently describe what is the rotation direction of each
 rotor. I needed to figure out this through experiments with the
-simulator, which took me to realize that I need to change one sign in
+simulator, which took me to realize that I needed to change one sign in
 the equation for the moment about Z relative to the equations provided
 in the theoretical part. 
 
@@ -23,7 +23,8 @@ After some trouble, I managed and solved this issue by changing the
 signs of the x and y accelerations.
 
 I kindly suggest to the Udacity team that this part of the project
-specification be improved to avoid unnecessary struggle to students.
+specification or course contents be improved to avoid unnecessary
+struggle to students.
 
 The parameters were tuned successfully to pass these tests, as shown
 below. 
@@ -66,8 +67,10 @@ with the same set of parameters.
 The challenge here was to find a suitable set of parameters. With the
 parameters I had from before, the quads were crashing. Since the
 drones still had to go through the previous tests, I did not want to
-modify many parameters. In the end I found a suitable set of
-parameters by tuning just the parameters for control of z. 
+modify many parameters. In the end, I found a suitable set of
+parameters by tuning just the parameters for control of z. All
+previous tests are still passed. 
+
 
 <p align="center">
 <img src="writeup_figs/scenario_5.png" width="800"/>
