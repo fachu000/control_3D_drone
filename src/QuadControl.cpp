@@ -81,13 +81,17 @@ VehicleCommand QuadControl::GenerateMotorCommands(float collThrustCmd, V3F momen
     float c = collThrustCmd;
     float b1 = momentCmd.x/L;
     float b2 = momentCmd.y/L;
-    float b3 = momentCmd.z/kappa;
+    //float b3 = momentCmd.z/kappa;
+    float b3 = -momentCmd.z/kappa;
     
     float F4 = -1/4.*(b3-b1+b2-c);
     float F3 = -1/2.*(2*F4+b2-c);
     float F2 = -1/2.*(2*F3 + b1 -c);
     float F1 = c - F2 - F3 - F4;
 
+//if ((F1 < minMotorThrust)||(F1>maxMotorThrust)) printf("F1 exceeds limits: F1 = %.2f\n",F1);
+    
+    //printf("moment command %.4f, %.4f, %.4f\n",momentCmd.x,momentCmd.y,momentCmd.z);
     
     //////// THE FOLLOWING ORDERING CRITERIA DIFFERS FROM THE EXERCISE - DEBUG FOLLOWING
     
@@ -97,6 +101,15 @@ VehicleCommand QuadControl::GenerateMotorCommands(float collThrustCmd, V3F momen
     cmd.desiredThrustsN[2] = F4; //mass * 9.81f / 4.f; // rear left
     cmd.desiredThrustsN[3] = F3; //mass * 9.81f / 4.f; // rear right
 
+    //cmd.desiredThrustsN[0] = CONSTRAIN(F1,minMotorThrust,maxMotorThrust); //mass * 9.81f / 4.f; // front left
+    //cmd.desiredThrustsN[1] = CONSTRAIN(F2,minMotorThrust,maxMotorThrust); //mass * 9.81f / 4.f; // front right
+    //cmd.desiredThrustsN[2] = CONSTRAIN(F4,minMotorThrust,maxMotorThrust); //mass * 9.81f / 4.f; // rear left
+    //cmd.desiredThrustsN[3] = CONSTRAIN(F3,minMotorThrust,maxMotorThrust); //mass * 9.81f / 4.f; // rear right
+
+    //cmd.desiredThrustsN[0] = 2*mass * 9.81f / 4.f; // front left
+    //cmd.desiredThrustsN[1] = mass * 9.81f / 4.f; // front right
+    //cmd.desiredThrustsN[2] = mass * 9.81f / 4.f; // rear left
+    //cmd.desiredThrustsN[3] = 2*mass * 9.81f / 4.f; // rear right
   /////////////////////////////// END STUDENT CODE ////////////////////////////
 
   return cmd;
@@ -124,12 +137,18 @@ V3F QuadControl::BodyRateControl(V3F pqrCmd, V3F pqr)
     Iyy = config->Get(_config + ".Iyy", 0);
     Izz = config->Get(_config + ".Izz", 0);
     
+    // debug
+    //pqrCmd.x = 0; pqrCmd.y =-0.1;pqrCmd.z =0;
+    //
+    
     V3F omega_dot = kpPQR*( pqrCmd - pqr );
     
     V3F I(Ixx,Iyy,Izz);
     momentCmd = I*omega_dot;
-   // printf("%.3f\n",momentCmd[1]);
-
+    //printf("u_x = %.3f, u_y = %.3f, u_z = %.3f\n",momentCmd.x,momentCmd.y,momentCmd.z);
+    //printf("q = %.2f, q_cmd = %.2f, kp_q = %.2f\n",pqr.y,pqrCmd.y,kpPQR.y);
+    //printf("p = %.2f, p_cmd = %.2f, kp_p = %.2f\n",pqr.x,pqrCmd.x,kpPQR.x);
+    //printf("prod = %.3f\n",Ixx*kpPQR.x*(pqrCmd.x - pqr.x));
   /////////////////////////////// END STUDENT CODE ////////////////////////////
 
   return momentCmd;
@@ -158,18 +177,30 @@ V3F QuadControl::RollPitchControl(V3F accelCmd, Quaternion<float> attitude, floa
   Mat3x3F R = attitude.RotationMatrix_IwrtB();
 
   ////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
+    
+    // debug
+//accelCmd.x = 0; accelCmd.y = -maxAccelXY; //accelCmd.z = 0;
+   // accelCmd.x = 0; accelCmd.y = 2; //accelCmd.z = 0;
+    
+    //
+    
+    
     ParamsHandle config = SimpleConfig::GetInstance();
     float Mass = config->Get(_config + ".Mass", 0);
     float c_thrust = collThrustCmd/Mass;
 
-    float b_x_c = accelCmd[0]/c_thrust;
-    float b_y_c = accelCmd[1]/c_thrust;
+    // debug: sign of the following two lines changed
+    float b_x_c = -accelCmd.x/c_thrust;
+    float b_y_c = -accelCmd.y/c_thrust;
     float b_x_dot_c = kpBank * (b_x_c - R(0,2));
     float b_y_dot_c = kpBank * (b_y_c - R(1,2));
     
-    pqrCmd[0] = 1/R(2,2)*(R(1,0)*b_x_dot_c - R(0,0)*b_y_dot_c);
-    pqrCmd[1] = 1/R(2,2)*(R(1,1)*b_x_dot_c - R(0,1)*b_y_dot_c);
-    pqrCmd[2] = 0;
+    pqrCmd.x = 1/R(2,2)*(R(1,0)*b_x_dot_c - R(0,0)*b_y_dot_c);
+    pqrCmd.y = 1/R(2,2)*(R(1,1)*b_x_dot_c - R(0,1)*b_y_dot_c);
+    pqrCmd.z = 0;
+    
+   //printf("                               rp_cmd = %.2f, q_cmd = %.2f\n",pqrCmd.x,pqrCmd.y );
+    
   /////////////////////////////// END STUDENT CODE ////////////////////////////
 
   return pqrCmd;
@@ -199,8 +230,14 @@ float QuadControl::AltitudeControl(float posZCmd, float velZCmd, float posZ, flo
   float thrust = 0;
 
   ////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
-
-
+    integratedAltitudeError += (posZCmd - posZ)*dt;
+    
+    float u1_bar = kpPosZ*(posZCmd - posZ) + kpVelZ*(velZCmd - velZ) + accelZCmd + KiPosZ*integratedAltitudeError;  // commanded Z acceleration
+    float c_thrust = (u1_bar - CONST_GRAVITY)/R(2,2);
+    
+    thrust = - mass * c_thrust;
+    //thrust = - mass * CONST_GRAVITY;
+    //printf("thrust = %.3f\n",posZ);
 
   /////////////////////////////// END STUDENT CODE ////////////////////////////
   
@@ -237,9 +274,54 @@ V3F QuadControl::LateralPositionControl(V3F posCmd, V3F velCmd, V3F pos, V3F vel
   V3F accelCmd = accelCmdFF;
 
   ////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
+    
+    // debug
+    //posCmd.x = 0; posCmd.y = 0; posCmd.z = -1;
+    //velCmd.x = 0; velCmd.y = 0; velCmd.z = 0;
+    //
+    
+    
+    //velCmd.x = CONSTRAIN( velCmd.x , - maxSpeedXY , maxSpeedXY );
+    //velCmd.y = CONSTRAIN( velCmd.y , - maxSpeedXY , maxSpeedXY );
+    //accelCmdFF.x = CONSTRAIN( accelCmdFF.x , - maxAccelXY , maxAccelXY );
+    //accelCmdFF.y = CONSTRAIN( accelCmdFF.y , - maxAccelXY , maxAccelXY );
+    
+    float vel_mag = sqrt(pow(velCmd.x,2) + pow(velCmd.y,2) );
+    if (vel_mag >= maxSpeedXY)
+    {
+        velCmd.x = velCmd.x*maxSpeedXY/vel_mag;
+        velCmd.y = velCmd.y*maxSpeedXY/vel_mag;
+    }
+    
+    
+    accelCmd = accelCmd + kpPosXY*(posCmd - pos) + kpVelXY*(velCmd -vel);
+    
+    //printf("accel x = %.2f, accel y = %.2f\n",accelCmd.x,accelCmd.y);
+    
+    float acc_mag = sqrt(pow(accelCmd.x,2) + pow(accelCmd.y,2) );
+    if (acc_mag >= maxAccelXY)
+    {
+        accelCmd.x = accelCmd.x*maxAccelXY/acc_mag;
+        accelCmd.y = accelCmd.y*maxAccelXY/acc_mag;
+    }
+    //accelCmd.x = CONSTRAIN( accelCmd.x , - maxAccelXY , maxAccelXY );
+    //accelCmd.y = CONSTRAIN( accelCmd.y , - maxAccelXY , maxAccelXY );
+    
+    accelCmd.z = 0;
 
-  
-
+    
+    //printf("clipped accel x = %.2f, accel y = %.2f\n",accelCmd.x,accelCmd.y);
+    //printf("posCmd = %.2f, pos = %.2f, velCmd = %.2f, vel = %.2f\n",posCmd.x,pos.x,velCmd.x,vel.x);
+    
+    //printf("posCmd = %.2f, pos = %.2f, velCmd = %.2f, vel = %f\n",posCmd.x,pos.x,velCmd.x,vel.x);
+  // printf("clipped accel cmd x = %.2f, accel y = %.2f\n",accelCmd.x,accelCmd.y);
+   
+    
+    
+    // debug
+    //accelCmd = -1*accelCmd;
+    //
+    
   /////////////////////////////// END STUDENT CODE ////////////////////////////
 
   return accelCmd;
@@ -259,9 +341,10 @@ float QuadControl::YawControl(float yawCmd, float yaw)
   //  - use the yaw control gain parameter kpYaw
 
   float yawRateCmd=0;
+    float PI = 3.141592;
   ////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
 
-
+    yawRateCmd = kpYaw*(   fmodf(yawCmd-yaw + PI,2*PI)-PI  );  // diff betw. -Pi and Pi
   /////////////////////////////// END STUDENT CODE ////////////////////////////
 
   return yawRateCmd;
